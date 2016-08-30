@@ -1,0 +1,33 @@
+---
+- name: add docker repo apt key
+  apt_key:
+    keyserver=p80.pool.sks-keyservers.net
+    id=58118E89F3A912897C070ADBF76221572C52609D
+    state=present
+
+- name: add docker repository
+  apt_repository:
+    repo="deb https://apt.dockerproject.org/repo ubuntu-xenial main"
+    update_cache=yes
+
+- name: install docker
+  apt: name=docker-engine
+
+- name: create /etc/systemd/system/docker.service.d directory
+  file:
+    dest=/etc/systemd/system/docker.service.d
+    recurse=yes
+    state=directory
+
+- name: uploads docker configuration file
+  template:
+    src: 'docker/docker.conf.j2'
+    dest: '/etc/systemd/system/docker.service.d/docker.conf'
+  notify:
+    - 'daemon-reload'
+    - 'restart docker'
+
+- name: install docker-py
+  pip: name=docker-py
+
+- meta: flush_handlers
