@@ -1,6 +1,8 @@
 ansible-role-docker
 =========
 
+[![Build Status](https://travis-ci.org/chirkin/ansible-role-docker.svg?branch=master)](https://travis-ci.org/chirkin/ansible-role-docker)
+
 This role installs and configures the docker.
 
 Requirements
