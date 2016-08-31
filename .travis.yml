@@ -1,10 +1,9 @@
 ---
 language: python
 python: "2.7"
-dist: xenial
 
 # Use the new container infrastructure
-sudo: required
+sudo: false
 
 # Install ansible
 addons:
@@ -24,7 +23,7 @@ install:
 
 script:
   # Basic role syntax check
-  - ansible-playbook tests/travis/travis.yml -i tests/travis/inventory --syntax-check
+  - ansible-playbook tests/test.yml -i tests/inventory --syntax-check
 
 notifications:
   webhooks: https://galaxy.ansible.com/api/v1/notifications/

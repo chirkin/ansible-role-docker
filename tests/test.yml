@@ -1,5 +1,5 @@
 ---
-- hosts: all
-  become: yes
+- hosts: localhost
+  remote_user: root
   roles:
     - ansible-role-docker
