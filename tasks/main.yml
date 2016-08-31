@@ -1,33 +1,105 @@
 ---
-- name: add docker repo apt key
+- name: check ubuntu version
+  fail:
+    msg: "{{ ansible_distribution_version }} is not an acceptable version of Ubuntu for this role"
+  when: ansible_distribution_version|version_compare(15.04, '<')
+
+- name: add docker repository key
   apt_key:
-    keyserver=p80.pool.sks-keyservers.net
-    id=58118E89F3A912897C070ADBF76221572C52609D
-    state=present
+    keyserver: "{{ apt_key_url }}"
+    id: "{{ apt_key_sig }}"
+    state: present
 
 - name: add docker repository
   apt_repository:
-    repo="deb https://apt.dockerproject.org/repo ubuntu-xenial main"
-    update_cache=yes
+    repo: "{{ apt_repository }}"
+    update_cache: yes
 
-- name: install docker
-  apt: name=docker-engine
+- name: install docker package
+  apt:
+    name: docker-engine
+    state: "{{ 'latest' if docker_update else 'present' }}"
+    update_cache: yes
+    cache_valid_time: "{{ docker_apt_cache_valid_time }}"
 
-- name: create /etc/systemd/system/docker.service.d directory
+- name: create systemd configuration directory for Docker service
   file:
-    dest=/etc/systemd/system/docker.service.d
-    recurse=yes
-    state=directory
+    dest: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when: docker_opts != ""
 
-- name: uploads docker configuration file
-  template:
-    src: 'docker/docker.conf.j2'
-    dest: '/etc/systemd/system/docker.service.d/docker.conf'
+- name: set docker daemon options (systemd)
+  copy:
+    content: |
+      [Service]
+      Environment="DOCKER_OPTS={{ docker_opts.rstrip('\n') }}"
+    dest: /etc/systemd/system/docker.service.d/env.conf
+    owner: root
+    group: root
+    mode: 0644
   notify:
-    - 'daemon-reload'
-    - 'restart docker'
+    - reload systemd
+    - restart docker
+  when: docker_opts != ""
+
+- name: create docker daemon configuration file
+  template:
+    src: docker.conf
+    dest: /etc/systemd/system/docker.service.d/docker.conf
+  notify:
+    - reload systemd
+    - restart docker
+  when: docker_opts != ""
+
+- name: install pip, python-dev package with apt
+  apt:
+    pkg: "{{ item }}"
+    state: latest
+    update_cache: yes
+    cache_valid_time: "{{ docker_apt_cache_valid_time }}"
+  with_items:
+    - python-dev
+    - python-pip
+
+- name: upgrade latest docker-py
+  pip:
+    name: "{{ item.name }}"
+    state: latest
+  with_items:
+    - { name: docker-py, version: "{{ docker_py_version }}", install: "{{ docker_py_install }}" }
+  when: (item.version=="latest" and item.install)
 
 - name: install docker-py
-  pip: name=docker-py
+  pip:
+    name: "{{ item.name }}"
+    state: present
+    version: "{{ item.version }}"
+  with_items:
+    - { name: docker-py, version: "{{ docker_py_version }}", install: "{{ docker_py_install }}" }
+  when: (item.version!="latest" and item.install)
 
-- meta: flush_handlers
+- name: check if /etc/updatedb.conf exists
+  stat:
+    path: /etc/updatedb.conf
+  register: _updatedb_conf_exists
+
+- name: ensure updatedb does not index /var/lib/docker
+  lineinfile:
+    dest: /etc/updatedb.conf
+    state: present
+    backrefs: yes
+    regexp: '^PRUNEPATHS="(/var/lib/docker )?(.*)"$'
+    line: 'PRUNEPATHS="/var/lib/docker \2"'
+  when: _updatedb_conf_exists.stat.exists
+
+- name: start docker
+  service:
+    name: docker
+    state: started
+
+- name: update facts if docker0 is not defined
+  action: setup filter="ansible_docker0"
+  when: ansible_docker0 is not defined
