@@ -31,20 +31,6 @@
     mode: 0755
   when: docker_opts != ""
 
-- name: set docker daemon options (systemd)
-  copy:
-    content: |
-      [Service]
-      Environment="DOCKER_OPTS={{ docker_opts.rstrip('\n') }}"
-    dest: /etc/systemd/system/docker.service.d/env.conf
-    owner: root
-    group: root
-    mode: 0644
-  notify:
-    - reload systemd
-    - restart docker
-  when: docker_opts != ""
-
 - name: create docker daemon configuration file
   template:
     src: docker.conf
