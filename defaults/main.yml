@@ -10,6 +10,8 @@ apt_repository: deb https://apt.dockerproject.org/repo ubuntu-{{ ansible_distrib
 
 docker_opts: "-H unix:///var/run/docker.sock"
 
+docker_driver: overlay2
+
 # check new docker package version
 docker_update: no
 
