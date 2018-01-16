@@ -1,92 +1,52 @@
 ---
-- name: check ubuntu version
+- name: Check Ubuntu version
   fail:
-    msg: "{{ ansible_distribution_version }} is not an acceptable version of Ubuntu for this role"
+    msg: '{{ ansible_distribution_version }} is not an acceptable version of Ubuntu for this role'
   when: ansible_distribution_version|version_compare(15.04, '<')
 
-- name: add docker repository key
-  apt_key:
-    keyserver: "{{ apt_key_url }}"
-    id: "{{ apt_key_sig }}"
-    state: present
-
-- name: add docker repository
-  apt_repository:
-    repo: "{{ apt_repository }}"
-    update_cache: yes
-    filename: docker
-
-- name: install docker package
-  apt:
-    name: docker-engine
-    state: "{{ 'latest' if docker_update else 'present' }}"
-    update_cache: yes
-    cache_valid_time: "{{ docker_apt_cache_valid_time }}"
-
-- name: create systemd configuration directory for Docker service
-  file:
-    dest: /etc/systemd/system/docker.service.d
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-  when: docker_opts != ""
-
-- name: create docker daemon configuration file
-  template:
-    src: docker.conf
-    dest: /etc/systemd/system/docker.service.d/docker.conf
-  notify:
-    - reload systemd
-    - restart docker
-  when: docker_opts != ""
-
-- name: install pip, python-dev package with apt
-  apt:
-    pkg: "{{ item }}"
-    state: latest
-    update_cache: yes
-    cache_valid_time: "{{ docker_apt_cache_valid_time }}"
+- name: Ensure old versions of Docker are not installed
+  package:
+    name: '{{ item }}'
+    state: absent
   with_items:
+    - docker
+    - docker-engine
+
+- name: Ensure depdencies are installed
+  apt:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - software-properties-common
     - python-dev
     - python-pip
 
-- name: upgrade latest docker-py
-  pip:
-    name: "{{ item.name }}"
-    state: latest
-  with_items:
-    - { name: docker-py, version: "{{ docker_py_version }}", install: "{{ docker_py_install }}" }
-  when: (item.version=="latest" and item.install)
-
-- name: install docker-py
-  pip:
-    name: "{{ item.name }}"
+- name: Add Docker apt key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
     state: present
-    version: "{{ item.version }}"
-  with_items:
-    - { name: docker-py, version: "{{ docker_py_version }}", install: "{{ docker_py_install }}" }
-  when: (item.version!="latest" and item.install)
 
-- name: check if /etc/updatedb.conf exists
-  stat:
-    path: /etc/updatedb.conf
-  register: _updatedb_conf_exists
-
-- name: ensure updatedb does not index /var/lib/docker
-  lineinfile:
-    dest: /etc/updatedb.conf
+- name: Add docker repository
+  apt_repository:
+    repo: '{{ docker_apt_repository }}'
     state: present
-    backrefs: yes
-    regexp: '^PRUNEPATHS="(/var/lib/docker )?(.*)"$'
-    line: 'PRUNEPATHS="/var/lib/docker \2"'
-  when: _updatedb_conf_exists.stat.exists
+    update_cache: yes
 
-- name: start docker
+- name: Install Docker
+  apt:
+    name: '{{docker_package}}'
+    state: '{{docker_package_state}}'
+
+- name: Install docker-py
+  pip:
+    name: docker-py
+    state: present
+
+- name: Ensure Docker is started and enabled at boot
   service:
     name: docker
     state: started
-
-- name: update facts if docker0 is not defined
-  action: setup filter="ansible_docker0"
-  when: ansible_docker0 is not defined
+    enabled: yes

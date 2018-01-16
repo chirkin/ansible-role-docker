@@ -1,19 +1,5 @@
 ---
-docker_apt_cache_valid_time: 3600
+docker_package: 'docker-ce'
+docker_package_state: present
 
-# apt repository key url
-apt_key_url: hkp://p80.pool.sks-keyservers.net:80
-# apt repository key signature
-apt_key_sig: 58118E89F3A912897C070ADBF76221572C52609D
-# apt repository name for docker
-apt_repository: deb https://apt.dockerproject.org/repo ubuntu-{{ ansible_distribution_release }} main
-
-docker_opts: "-H unix:///var/run/docker.sock"
-
-docker_driver: overlay2
-
-# check new docker package version
-docker_update: no
-
-docker_py_install: true
-docker_py_version: latest
+docker_apt_repository: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
