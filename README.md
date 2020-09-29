@@ -23,7 +23,7 @@ Example Playbook
 
     - hosts: servers
       roles:
-         - { role: chirkin.ansible-role-docker }
+         - { role: chirkin.docker }
 
 License
 -------
