@@ -1,10 +1,10 @@
 ---
 language: python
-services: docker
 
 env:
   matrix:
     - MOLECULE_DISTRO: ubuntu1804
+    - MOLECULE_DISTRO: ubuntu1604
 
 install:
   # Install test dependencies.
@@ -12,7 +12,6 @@ install:
 
 script:
   # Run tests.
-  - ansible --version
   - molecule test
 
 notifications:
