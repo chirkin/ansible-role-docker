@@ -4,24 +4,12 @@
     msg: '{{ ansible_distribution_version }} is not an acceptable version of Ubuntu for this role'
   when: ansible_distribution_version is version_compare(15.04, '<')
 
-- name: Ensure old versions of Docker are not installed
-  package:
-    name: '{{ item }}'
-    state: absent
-  with_items:
-    - docker
-    - docker-engine
-
 - name: Ensure depdencies are installed
   apt:
-    name: '{{ item }}'
+    name: ['apt-transport-https', 'ca-certificates', 'software-properties-common', 'python3-dev', 'python3-pip', 'gpg-agent']
+    update_cache: true
+    cache_valid_time: 86400
     state: present
-  with_items:
-    - apt-transport-https
-    - ca-certificates
-    - software-properties-common
-    - python-dev
-    - python-pip
 
 - name: Add Docker apt key
   apt_key:
@@ -33,20 +21,35 @@
   apt_repository:
     repo: '{{ docker_apt_repository }}'
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Install Docker
   apt:
-    name: '{{docker_package}}'
-    state: '{{docker_package_state}}'
+    name: '{{ docker_package }}'
+    state: '{{ docker_package_state }}'
 
 - name: Install docker-py
   pip:
     name: docker-py
     state: present
 
+- name: Ensure /etc/docker directory exists
+  file:
+    dest: /etc/docker
+    mode: "0700"
+    state: directory
+
+- name: Create /etc/docker/daemon.json
+  copy:
+    content: |
+      {{ docker_daemon_json_entries | to_nice_json }}
+    dest: /etc/docker/daemon.json
+  notify: restart docker
+
+- meta: flush_handlers
+
 - name: Ensure Docker is started and enabled at boot
   service:
     name: docker
     state: started
-    enabled: yes
+    enabled: true

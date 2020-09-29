@@ -1,20 +1,15 @@
 galaxy_info:
-  author: a4irkin
-  description: Ansible docker role
-
-  license: license (GPLv2, CC-BY, etc)
-
-  min_ansible_version: 2.0
-
+  author: Aleksey Chirkin
+  description: Ansible role for installing docker on Ubuntu
+  license: license (BSD, MIT)
+  min_ansible_version: 2.4
   platforms:
     - name: Ubuntu
       versions:
         - xenial
-
+        - bionic
   galaxy_tags:
     - docker
-    - linux
+    - ubuntu
     - xenial
-    - installer
-
-dependencies: []
+    - bionic

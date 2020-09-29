@@ -1,13 +1,5 @@
 ---
-- hosts: all
-
-  pre_tasks:
-    - name: Update apt cache.
-      apt: update_cache=yes cache_valid_time=600
-      when: ansible_os_family == 'Debian'
-
-    - name: Install dependencies.
-      package: name=curl state=present
-
+- hosts: localhost
+  remote_user: root
   roles:
-    - role_under_test
+    - ansible-role-docker
