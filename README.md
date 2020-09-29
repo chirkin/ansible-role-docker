@@ -8,7 +8,6 @@ This role installs and configures the docker.
 Requirements
 ------------
 
-Ubuntu 16.04 Xenial Xerus
 Ubuntu 18.04 Bionic Beaver
 
 Role Variables
