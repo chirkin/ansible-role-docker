@@ -46,15 +46,6 @@
     dest: /etc/docker/daemon.json
   notify: restart docker
 
-- name: Start docker
-  command: service docker start
-
-- name: docker status
-  command: service docker status
-  register: __output
-
-- debug: var=__output
-
 - meta: flush_handlers
 
 - name: Ensure Docker is started and enabled at boot
