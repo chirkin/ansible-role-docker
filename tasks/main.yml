@@ -30,9 +30,14 @@
     name: '{{ docker_package }}'
     state: '{{ docker_package_state }}'
 
-- name: Install docker-py
+- name: Uninstall deprecated docker-py package
   pip:
     name: docker-py
+    state: absent
+
+- name: Install docker
+  pip:
+    name: docker
     state: present
 
 - name: Ensure /etc/docker directory exists
